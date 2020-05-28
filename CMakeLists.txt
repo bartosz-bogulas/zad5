@@ -3,4 +3,4 @@ project(zad5)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(zad5 src/main.cpp inc/Vector.hpp)
+add_executable(zad5 src/main.cpp inc/geometry.hpp)

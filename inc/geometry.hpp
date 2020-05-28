@@ -224,18 +224,74 @@ public:
 template <class T, size_t N>
 Vector<T, N>::Vector(const T (&array)[N]) : BaseVector<T, N, Vector<T, N>>(array) {}
 
+template <class T>
+class Matrix3D;
+
 
 template <class T>
-class Vector3D : public BaseVector<T, 3, Vector3D<T>>, public Vector<T, 3> {
+class Vector3D : public BaseVector<T, 3, Vector3D<T>> {
 public:
     Vector3D() = default;
-    Vector3D(T x_scalar, T y_scalar, T z_scalar); // TODO why no implement request?
+    Vector3D(T x_scalar, T y_scalar, T z_scalar);
     explicit Vector3D(const T (&array)[3]);
+
+    void translate(Vector3D<T>& translation);
+
+    void rotate(Vector3D<T>& origin, Matrix3D<T>& rotation);
+    void rotate(Matrix3D<T>& rotation);
+
+    void rotate_radians(Vector3D<T>& origin, Vector3D<T>& radians);
+    void rotate_radians(Vector3D<T>& radians);
+
+    void rotate_degrees(Vector3D<T>& origin, Vector3D<T>& degrees);
+    void rotate_degrees(Vector3D<T>& degrees);
 };
+
+template <class T> // TODO optimize
+Vector3D<T>::Vector3D(T x_scalar, T y_scalar, T z_scalar)
+    : BaseVector<T, 3, Vector3D<T>>({x_scalar, y_scalar, z_scalar}) {}
 
 template <class T>
 Vector3D<T>::Vector3D(const T (&array)[3]) : BaseVector<T, 3, Vector3D<T>>(array) {}
 
+// TODO correct?
+
+template <class T>
+void Vector3D<T>::translate(Vector3D<T>& translation) {
+    *this += translation;
+}
+
+template <class T>
+void Vector3D<T>::rotate(Vector3D<T>& origin, Matrix3D<T>& rotation) {
+    *this = rotation * (*this - origin) + origin;
+}
+
+template <class T>
+void Vector3D<T>::rotate(Matrix3D<T>& rotation) {
+    *this = rotation * (*this);
+}
+
+// TODO correct?
+
+template <class T>
+void Vector3D<T>::rotate_radians(Vector3D<T>& origin, Vector3D<T>& radians) {
+    rotate(origin, Matrix3D<T>::rotation_radians(radians));
+}
+
+template <class T>
+void Vector3D<T>::rotate_radians(Vector3D<T>& radians) {
+    rotate(Matrix3D<T>::rotation_radians(radians));
+}
+
+template <class T>
+void Vector3D<T>::rotate_degrees(Vector3D<T>& origin, Vector3D<T>& degrees) {
+    rotate(origin, Matrix3D<T>::rotation_degrees(degrees));
+}
+
+template <class T>
+void Vector3D<T>::rotate_degrees(Vector3D<T>& degrees) {
+    rotate(Matrix3D<T>::rotation_degrees(degrees));
+}
 
 template <class T, size_t N, class R1, class R2>
 class BaseMatrix {
@@ -264,7 +320,7 @@ protected:
     R2 vectors[N];
 };
 
-template <class T, size_t N, class R1, class R2> // could be replaced with Vector(array, size_t offset), but copy constructor might be needed
+template <class T, size_t N, class R1, class R2> // TODO could be replaced with Vector(array, size_t offset), but copy constructor might be needed
 BaseMatrix<T, N, R1, R2>::BaseMatrix(const T (&scalars)[N * N]) {
     for (size_t x = 0; x < N; x++)
         for (size_t y = 0; y < N; y++)
@@ -306,6 +362,7 @@ R1& BaseMatrix<T, N, R1, R2>::operator*=(const BaseMatrix<T, N, _R1, _R2>& matri
     for (size_t x = 0; x < N; x++)
         for (size_t y = 0; y < N; y++)
             vectors[x][y] = vectors[x] * matrix[y];
+    return *this;
 }
 
 template <class T, size_t N, class R1, class R2>
@@ -325,7 +382,6 @@ std::ostream& operator<<(std::ostream& out, const BaseMatrix<T, N, R1, R2>& matr
     return out;
 }
 
-
 template <class T, size_t N>
 class Matrix : public BaseMatrix<T, N, Matrix<T, N>, Vector<T, N>> {
 public:
@@ -336,15 +392,83 @@ public:
 template <class T, size_t N>
 Matrix<T, N>::Matrix(const T (&scalars)[N * N]) : BaseMatrix<T, N, Matrix<T, N>, Vector<T, N>>(scalars) {}
 
-
 template <class T>
 class Matrix3D : public BaseMatrix<T, 3, Matrix3D<T>, Vector3D<T>> {
 public:
     Matrix3D() = default;
     explicit Matrix3D(const T (&scalars)[9]);
+
+    static Matrix3D<T> rotation_radians(T x_radians, T y_radians, T z_radians);
+    static Matrix3D<T> rotation_radians(Vector3D<T>& radians);
+
+    static Matrix3D<T> rotation_degrees(T x_degrees, T y_degrees, T z_degrees);
+    static Matrix3D<T> rotation_degrees(Vector3D<T>& degrees);
 };
 
 template <class T>
 Matrix3D<T>::Matrix3D(const T (&scalars)[9]) : BaseMatrix<T, 3, Matrix3D<T>, Vector3D<T>>(scalars) {}
+
+template <class T>
+Matrix3D<T> Matrix3D<T>::rotation_radians(T x_radians, T y_radians, T z_radians) {
+    return Matrix3D<T>({
+        cos(y_radians) * cos(z_radians),
+        cos(x_radians) * sin(z_radians) + sin(x_radians) * sin(y_radians) * cos(z_radians),
+        sin(x_radians) * sin(z_radians) - cos(x_radians) * sin(y_radians) * cos(z_radians),
+
+       -cos(y_radians) * sin(z_radians),
+        cos(x_radians) * cos(z_radians) - sin(x_radians) * sin(y_radians) * sin(z_radians),
+        sin(x_radians) * cos(z_radians) + cos(x_radians) * sin(y_radians) * sin(z_radians),
+
+        sin(y_radians),
+       -sin(x_radians) * cos(y_radians),
+        cos(x_radians) * cos(y_radians)
+    });
+}
+
+template <class T>
+Matrix3D<T> Matrix3D<T>::rotation_radians(Vector3D<T>& radians) {
+    return rotation_radians(radians[0], radians[1], radians[2]);
+}
+
+template <class T>
+Matrix3D<T> Matrix3D<T>::rotation_degrees(T x_degrees, T y_degrees, T z_degrees) {
+    return rotation_radians(to_radians(x_degrees), to_radians(y_degrees), to_radians(z_degrees));
+}
+
+template <class T>
+Matrix3D<T> Matrix3D<T>::rotation_degrees(Vector3D<T>& degrees) {
+    return rotation_degrees(degrees[0], degrees[1], degrees[2]);
+}
+
+// TODO find simpler approach
+
+namespace std {
+    template <class T, size_t N, class R>
+    struct hash<BaseVector<T, N, R>> {
+        static constexpr hash<T> hash_t;
+
+        template <class _R> // was _R = R
+        size_t operator()(const BaseVector<T, N, _R>& vector) const { // based on: https://stackoverflow.com/a/27216842/8406095
+            size_t seed = N;
+            for(size_t i = 0; i < N; i++)
+                seed ^= hash_t(vector[i]) + 0x9e3779b9 + (seed << 6u) + (seed >> 2u);
+            return seed;
+        }
+    };
+
+    template <class T, size_t N>
+    struct hash<Vector<T, N>> {
+        size_t operator()(const Vector<T, N>& vector) const {
+            return hash<BaseVector<T, N, Vector<T, N>>>()(vector);
+        }
+    };
+
+    template <class T>
+    struct hash<Vector3D<T>> {
+        size_t operator()(const Vector3D<T>& vector) const {
+            return hash<BaseVector<T, 3, Vector3D<T>>>()(vector);
+        }
+    };
+}
 
 #endif //ZAD5_GEOMETRY_HPP
