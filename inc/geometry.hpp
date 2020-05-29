@@ -23,11 +23,6 @@ template <class T, size_t N, class R> // as long as used with proper responsibil
 class BaseVector {
 public:
     BaseVector() = default;
-    //BaseVector(const BaseVector<T, N, R>& vector);
-    //Vector(Vector<T, N>&& vector) noexcept;
-    //Vector(const std::initializer_list<T>& scalars) {
-    //    *this = Vector(scalars);
-    //}; //implicit and use another inside
     explicit BaseVector(const T (&array)[N]);
 
     static R zeros();
@@ -145,7 +140,7 @@ template <class _R>
 R& BaseVector<T, N, R>::operator+=(const BaseVector<T, N, _R>& vector) {
     for (size_t i = 0; i < N; i++)
         scalars[i] += vector[i];
-    return *this; // TODO why?
+    return static_cast<R&>(*this); // TODO why?
 }
 
 template <class T, size_t N, class R>
@@ -184,7 +179,7 @@ template <class T, size_t N, class R>
 R& BaseVector<T, N, R>::operator/=(T scalar) {
     for (size_t i = 0; i < N; i++)
         scalars[i] /= scalar;
-    return *this; // TODO why?
+    return static_cast<R&>(*this); // TODO why?
 }
 
 template <class T, size_t N, class R>
@@ -213,7 +208,7 @@ std::ostream& operator<<(std::ostream& out, const BaseVector<T, N, R>& vector) {
     return out;
 }
 
-// TODO are thos constructors even needed?
+// TODO are those constructors even needed?
 template <class T, size_t N>
 class Vector : public BaseVector<T, N, Vector<T, N>> {
 public:
@@ -235,16 +230,16 @@ public:
     Vector3D(T x_scalar, T y_scalar, T z_scalar);
     explicit Vector3D(const T (&array)[3]);
 
-    void translate(Vector3D<T>& translation);
+    void translate(const Vector3D<T>& translation);
 
-    void rotate(Vector3D<T>& origin, Matrix3D<T>& rotation);
-    void rotate(Matrix3D<T>& rotation);
+    void rotate(const Vector3D<T>& origin, const Matrix3D<T>& rotation);
+    void rotate(const Matrix3D<T>& rotation);
 
-    void rotate_radians(Vector3D<T>& origin, Vector3D<T>& radians);
-    void rotate_radians(Vector3D<T>& radians);
+    void rotate_radians(const Vector3D<T>& origin, const Vector3D<T>& radians);
+    void rotate_radians(const Vector3D<T>& radians);
 
-    void rotate_degrees(Vector3D<T>& origin, Vector3D<T>& degrees);
-    void rotate_degrees(Vector3D<T>& degrees);
+    void rotate_degrees(const Vector3D<T>& origin, const Vector3D<T>& degrees);
+    void rotate_degrees(const Vector3D<T>& degrees);
 };
 
 template <class T> // TODO optimize
@@ -257,39 +252,39 @@ Vector3D<T>::Vector3D(const T (&array)[3]) : BaseVector<T, 3, Vector3D<T>>(array
 // TODO correct?
 
 template <class T>
-void Vector3D<T>::translate(Vector3D<T>& translation) {
+void Vector3D<T>::translate(const Vector3D<T>& translation) {
     *this += translation;
 }
 
 template <class T>
-void Vector3D<T>::rotate(Vector3D<T>& origin, Matrix3D<T>& rotation) {
+void Vector3D<T>::rotate(const Vector3D<T>& origin, const Matrix3D<T>& rotation) {
     *this = rotation * (*this - origin) + origin;
 }
 
 template <class T>
-void Vector3D<T>::rotate(Matrix3D<T>& rotation) {
+void Vector3D<T>::rotate(const Matrix3D<T>& rotation) {
     *this = rotation * (*this);
 }
 
 // TODO correct?
 
 template <class T>
-void Vector3D<T>::rotate_radians(Vector3D<T>& origin, Vector3D<T>& radians) {
+void Vector3D<T>::rotate_radians(const Vector3D<T>& origin, const Vector3D<T>& radians) {
     rotate(origin, Matrix3D<T>::rotation_radians(radians));
 }
 
 template <class T>
-void Vector3D<T>::rotate_radians(Vector3D<T>& radians) {
+void Vector3D<T>::rotate_radians(const Vector3D<T>& radians) {
     rotate(Matrix3D<T>::rotation_radians(radians));
 }
 
 template <class T>
-void Vector3D<T>::rotate_degrees(Vector3D<T>& origin, Vector3D<T>& degrees) {
+void Vector3D<T>::rotate_degrees(const Vector3D<T>& origin, const Vector3D<T>& degrees) {
     rotate(origin, Matrix3D<T>::rotation_degrees(degrees));
 }
 
 template <class T>
-void Vector3D<T>::rotate_degrees(Vector3D<T>& degrees) {
+void Vector3D<T>::rotate_degrees(const Vector3D<T>& degrees) {
     rotate(Matrix3D<T>::rotation_degrees(degrees));
 }
 
@@ -399,10 +394,10 @@ public:
     explicit Matrix3D(const T (&scalars)[9]);
 
     static Matrix3D<T> rotation_radians(T x_radians, T y_radians, T z_radians);
-    static Matrix3D<T> rotation_radians(Vector3D<T>& radians);
+    static Matrix3D<T> rotation_radians(const Vector3D<T>& radians);
 
     static Matrix3D<T> rotation_degrees(T x_degrees, T y_degrees, T z_degrees);
-    static Matrix3D<T> rotation_degrees(Vector3D<T>& degrees);
+    static Matrix3D<T> rotation_degrees(const Vector3D<T>& degrees);
 };
 
 template <class T>
@@ -426,7 +421,7 @@ Matrix3D<T> Matrix3D<T>::rotation_radians(T x_radians, T y_radians, T z_radians)
 }
 
 template <class T>
-Matrix3D<T> Matrix3D<T>::rotation_radians(Vector3D<T>& radians) {
+Matrix3D<T> Matrix3D<T>::rotation_radians(const Vector3D<T>& radians) {
     return rotation_radians(radians[0], radians[1], radians[2]);
 }
 
@@ -436,7 +431,7 @@ Matrix3D<T> Matrix3D<T>::rotation_degrees(T x_degrees, T y_degrees, T z_degrees)
 }
 
 template <class T>
-Matrix3D<T> Matrix3D<T>::rotation_degrees(Vector3D<T>& degrees) {
+Matrix3D<T> Matrix3D<T>::rotation_degrees(const Vector3D<T>& degrees) {
     return rotation_degrees(degrees[0], degrees[1], degrees[2]);
 }
 
