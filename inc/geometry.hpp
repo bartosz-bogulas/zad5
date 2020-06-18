@@ -538,7 +538,7 @@ namespace geometry {
     template <class T, size_t N, class R1, class R2>
     template <class _R1, class _R2>
     R1& basic_matrix<T, N, R1, R2>::operator-=(const basic_matrix<T, N, _R1, _R2>& matrix) {
-        return assign_operator_matrix<std::plus>(matrix);
+        return assign_operator_matrix<std::minus>(matrix);
     }
 
     template <class T, size_t N, class R1, class R2>
@@ -648,7 +648,7 @@ namespace geometry {
 
     template <class T>
     matrix3d<T> matrix3d<T>::rotation_radians(T x_radians, T y_radians, T z_radians) {
-        return {
+        return matrix3d<T>({
              cos(y_radians) * cos(z_radians),
              cos(x_radians) * sin(z_radians) + sin(x_radians) * sin(y_radians) * cos(z_radians),
              sin(x_radians) * sin(z_radians) - cos(x_radians) * sin(y_radians) * cos(z_radians),
@@ -660,7 +660,7 @@ namespace geometry {
              sin(y_radians),
             -sin(x_radians) * cos(y_radians),
              cos(x_radians) * cos(y_radians)
-        };
+        });
     }
 
     template <class T>
@@ -706,6 +706,13 @@ namespace std {
     struct hash<geometry::vector3d<T>> {
         size_t operator()(const geometry::vector3d<T>& vector) const {
             return hash<geometry::basic_vector<T, 3, geometry::vector3d<T>>>()(vector);
+        }
+    };
+
+    template <>
+    struct modulus<float> {
+        double operator()(const float x, const float y) const {
+            return fmod(x, y);
         }
     };
 }
